@@ -1,16 +1,18 @@
 {
   "name": "floornet",
   "version": "0.0.1",
-  "description": "",
+  "description": "A wordnet database in parquet",
   "main": "src/index.js",
   "types": "types/index.d.ts",
   "scripts": {
     "build": "node scripts/build-parquet.js",
     "scratch": "node scratch.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test \"tests/**/*.test.js\""
   },
-  "keywords": [],
-  "author": "",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "author": "spencermountain@gmail.com",
   "type": "module",
   "license": "MIT",
   "dependencies": {
