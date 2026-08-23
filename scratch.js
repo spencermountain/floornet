@@ -1,7 +1,8 @@
 // example usage - run `pnpm build` first, to create data/wordnet.parquet
 import floornet from './src/index.js'
 
-const wn = floornet('./data/wordnet.parquet')
+// const wn = floornet('./data/wordnet.parquet')
+const wn = floornet('https://snip.spencermountain.dev/2026/08/wordnet.parquet')
 
 // dictionary lookup
 const word = await wn.getWord('strike')

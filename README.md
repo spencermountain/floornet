@@ -20,7 +20,10 @@ pnpm build   # downloads english-wordnet (11mb) → data/wordnet.parquet
 ```js
 import floornet from 'floornet'
 
+// either local:
 const wn = floornet('./data/wordnet.parquet')
+// or remote:
+const wn = floornet('https://mywebsite.com/wordnet.parquet')
 
 let word = await wn.getWord('strike')
 word.title //'strike'
