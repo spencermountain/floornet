@@ -7,15 +7,18 @@
   "scripts": {
     "build": "node scripts/build-parquet.js",
     "scratch": "node scratch.js",
-    "test": "node --test \"tests/**/*.test.js\""
+    "test": "node --test \"tests/**/*.test.js\"",
+    "lint": "eslint ."
   },
   "engines": {
-    "node": ">=20.11"
+    "node": ">=12"
   },
-  "author": "spencermountain@gmail.com",
+  "author": "Spencer Kelly <spencermountain@gmail.com> (https://spencermountain.dev)",
   "type": "module",
   "license": "MIT",
+  "repository": "github:spencermountain/floornet",
   "dependencies": {
-    "@duckdb/node-api": "1.5.4-r.1"
+    "@duckdb/node-api": "1.5.4-r.1",
+    "eslint": "10.10.0"
   }
 }
