@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 // download english wordnet + convert it to a single parquet file
 //   usage: node scripts/build-parquet.js [outFile]
 import fs from 'node:fs'
@@ -33,7 +34,11 @@ const writeJsonl = function (rows) {
   const fd = fs.openSync(jsonlPath, 'w')
   const batch = 10000
   for (let i = 0; i < rows.length; i += batch) {
-    const chunk = rows.slice(i, i + batch).map(r => JSON.stringify(r)).join('\n') + '\n'
+    const chunk =
+      rows
+        .slice(i, i + batch)
+        .map((r) => JSON.stringify(r))
+        .join('\n') + '\n'
     fs.writeSync(fd, chunk)
   }
   fs.closeSync(fd)

@@ -2,21 +2,22 @@
   "name": "floornet",
   "version": "0.0.1",
   "description": "A wordnet database in parquet",
-  "main": "src/index.js",
-  "types": "types/index.d.ts",
+  "license": "MIT",
+  "repository": "github:spencermountain/floornet",
+  "author": "Spencer Kelly <spencermountain@gmail.com> (https://spencermountain.dev)",
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./types/index.d.ts",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=12"
+  },
   "scripts": {
     "build": "node scripts/build-parquet.js",
     "scratch": "node scratch.js",
     "test": "node --test \"tests/**/*.test.js\"",
     "lint": "eslint ."
   },
-  "engines": {
-    "node": ">=12"
-  },
-  "author": "Spencer Kelly <spencermountain@gmail.com> (https://spencermountain.dev)",
-  "type": "module",
-  "license": "MIT",
-  "repository": "github:spencermountain/floornet",
   "dependencies": {
     "@duckdb/node-api": "1.5.5-r.5",
     "eslint": "10.11.0"
