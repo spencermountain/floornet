@@ -18,7 +18,7 @@
   "license": "MIT",
   "repository": "github:spencermountain/floornet",
   "dependencies": {
-    "@duckdb/node-api": "1.5.4-r.1",
-    "eslint": "10.10.0"
+    "@duckdb/node-api": "1.5.5-r.5",
+    "eslint": "10.11.0"
   }
 }
