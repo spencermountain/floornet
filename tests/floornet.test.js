@@ -1,4 +1,4 @@
-// runs against data/wordnet.parquet - `pnpm build` first
+// runs against data/wordnet.parquet - `pnpm build:data` first
 // asserts on decades-stable wordnet facts, never on counts or wording
 import { test, after } from 'node:test'
 import assert from 'node:assert/strict'
@@ -7,7 +7,7 @@ import floornet from '../src/index.js'
 
 const path = new URL('../data/wordnet.parquet', import.meta.url).pathname
 if (fs.existsSync(path) === false) {
-  throw new Error('missing data/wordnet.parquet - run `pnpm build` first')
+  throw new Error('missing data/wordnet.parquet - run `pnpm build:data` first')
 }
 const wn = floornet(path)
 after(() => wn.close())
@@ -101,10 +101,32 @@ test('one-shot helpers', async () => {
   assert.ok((await wn.antonyms('happy')).includes('unhappy'))
 })
 
-test('raw sql', async () => {
-  const rows = await wn.sql('SELECT count(*) AS n, count(DISTINCT pos) AS pos FROM senses')
-  assert.ok(Number(rows[0].n) > 150000)
-  assert.equal(Number(rows[0].pos), 4)
+test('query filters, projects, sorts and pages matching rows', async () => {
+  const options = {
+    filter: { word_low: { $eq: 'dog' } },
+    columns: ['sense_id', 'sense_num'],
+    orderBy: 'sense_num'
+  }
+  const rows = await wn.query(options)
+  assert.ok(rows.length > 2)
+  assert.deepEqual(await wn.query({ ...options, rowStart: 1, rowEnd: 3 }), rows.slice(1, 3))
+  assert.ok(rows.every(row => Object.keys(row).sort().join() === 'sense_id,sense_num'))
+  assert.ok(rows.every((row, i) => i === 0 || rows[i - 1].sense_num <= row.sense_num))
+})
+
+test('query pagination without sorting', async () => {
+  const filter = { word_low: { $eq: 'dog' } }
+  const rows = await wn.query({ filter })
+  assert.deepEqual(await wn.query({ filter, rowStart: 1, rowEnd: 3 }), rows.slice(1, 3))
+  assert.deepEqual(await wn.query({ filter, rowEnd: 0 }), [])
+})
+
+test('close allows reopening', async () => {
+  const reader = floornet(path)
+  const before = await reader.define('dog')
+  await reader.close()
+  assert.deepEqual(await reader.define('dog'), before)
+  await reader.close()
 })
 
 test('misses are graceful', async () => {

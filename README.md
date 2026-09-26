@@ -1,19 +1,24 @@
 # floornet
 
-WordNet as a single Parquet file, with a small DuckDB wrapper for querying it.
+WordNet as a single Parquet file, with a small [hyparquet](https://github.com/hyparam/hyparquet) wrapper for querying it.
 
 - the whole English dictionary in one **19mb file** — no server, no install-step data
-- ad-hoc lookups in **~10ms**
+- pure JavaScript runtime, with no native database dependency
 - works on **remote files** too, via HTTP range-requests
 
 The data is [Open English WordNet 2025](https://github.com/globalwordnet/english-wordnet) — 185k senses, flattened to one row each, sorted by word, and compressed with zstd.
 
 ## setup
 
+Requires Node.js 20 or newer. DuckDB is a development dependency used only to build the dataset. The runtime uses hyparquet and hyparquet-compressors to read existing zstd files.
+
 ```bash
 pnpm install
-pnpm build   # downloads english-wordnet (11mb) → data/wordnet.parquet
+pnpm build        # Rollup → builds/floornet.{mjs,cjs,js,min.js}
+pnpm build:data   # downloads english-wordnet (11mb) → data/wordnet.parquet
 ```
+
+The ESM (`.mjs`) and CommonJS (`.cjs`) bundles export `default`, `Word`, and `Sense`. The browser bundles expose these on `window.floornet`; use `window.floornet.default(url)` with an HTTP(S) URL. Hyparquet and the decompressors are bundled. Local paths load hyparquet's Node filesystem reader on demand and require the installed `hyparquet` dependency.
 
 ## usage
 
@@ -60,13 +65,19 @@ await wn.synonyms('happy') //['felicitous', 'glad', 'well-chosen']
 await wn.antonyms('happy') //['unhappy']
 ```
 
-or raw sql, against a view called `senses`:
+query rows with hyparquet filters and column selection:
 
 ```js
-await wn.sql(`SELECT word, definition FROM senses WHERE lexfile = 'noun.food' LIMIT 3`)
+await wn.query({
+  filter: { lexfile: { $eq: 'noun.food' } },
+  columns: ['word', 'definition'],
+  rowEnd: 3
+})
 ```
 
-remote files just work — DuckDB fetches only the row-groups it needs:
+`query()` replaces `sql()`; SQL is no longer supported. Options are `filter`, `columns`, `rowStart`, `rowEnd`, and `orderBy` (an ascending column name). Row offsets are zero-based, `rowEnd` is exclusive, and pagination applies after filtering and sorting. Omitting options returns all rows; selecting columns and filtering keeps reads smaller. Sorting may require reading all matching rows.
+
+remote files just work — hyparquet uses HTTP range requests and skips row groups using column statistics:
 
 ```js
 const wn = floornet('https://somewhere.com/wordnet.parquet')
@@ -81,18 +92,18 @@ const wn = floornet('https://somewhere.com/wordnet.parquet')
 | `await wn.getWord(str)` | `Word` (check `.found` for misses) |
 | `await wn.define(str)` | `[{pos, definition}]` |
 | `await wn.synonyms(str)` / `.antonyms(str)` | `[String]` |
-| `await wn.sql(query)` | `[Object]` |
+| `await wn.query(options?)` | `[Object]` |
 | `await wn.close()` | - |
 
 **Word** — `.title`, `.found`, `.senses(pos?)`, `.pos()`, `.definitions(pos?)`, `.synonyms(pos?)`, `.antonyms(pos?)`, `.json()`, `await .fetch()`
 
 **Sense** — `.id`, `.word`, `.pos`, `.definition`, `.examples`, `.lexfile`, `.synonyms()`, `.antonyms()`, `.hypernyms()`, `.hyponyms()`, `.meronyms()`, `.holonyms()`, `.similar()`, `.related(rel)`, `.json()`
 
-Only `getWord()` and `fetch()` hit DuckDB — everything else is synchronous, because each row already embeds the words it points to.
+Word and sense traversal is synchronous because each row already embeds the words it points to. Lookups, lazy `fetch()`, and `query()` read Parquet asynchronously. Metadata is shared across lookups; `close()` clears it, and a subsequent lookup reopens the file.
 
 ## the file
 
-One row per sense, sorted by `word_low`, in 10k-row groups — so a lookup prunes to one row-group, locally or over http.
+One row per sense, sorted by `word_low`, in 10k-row groups — so lookups can skip unrelated row groups, locally or over HTTP. Words that span group boundaries include senses from every matching group.
 
 | column | type | |
 | --- | --- | --- |

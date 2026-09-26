@@ -32,9 +32,9 @@ class Floornet {
     return word.antonyms().map(w => w.title)
   }
 
-  // raw sql against the 'senses' view
-  async sql(query) {
-    return this.db.sql(query)
+  // read rows with hyparquet filters and column selection
+  async query(options) {
+    return this.db.query(options)
   }
 
   async close() {

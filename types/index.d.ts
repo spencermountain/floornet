@@ -1,4 +1,13 @@
 // type declarations for floornet (the library is plain js)
+import type { ParquetQueryFilter } from 'hyparquet'
+
+export interface QueryOptions {
+  filter?: ParquetQueryFilter
+  columns?: string[]
+  rowStart?: number
+  rowEnd?: number
+  orderBy?: string
+}
 
 export type Pos = 'noun' | 'verb' | 'adjective' | 'adverb'
 
@@ -88,8 +97,8 @@ declare class Floornet {
   define(str: string): Promise<Array<{ pos: Pos, definition: string }>>
   synonyms(str: string): Promise<string[]>
   antonyms(str: string): Promise<string[]>
-  /** raw sql against the 'senses' view */
-  sql(query: string): Promise<Array<Record<string, unknown>>>
+  /** query parquet rows; rowEnd is exclusive, after filtering and sorting */
+  query(options?: QueryOptions): Promise<Array<Record<string, unknown>>>
   close(): Promise<void>
 }
 

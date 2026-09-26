@@ -10,16 +10,27 @@
   "types": "./types/index.d.ts",
   "sideEffects": false,
   "engines": {
-    "node": ">=12"
+    "node": ">=20"
   },
   "scripts": {
-    "build": "node scripts/build-parquet.js",
-    "scratch": "node scratch.js",
-    "test": "node --test \"tests/**/*.test.js\"",
+    "build": "rollup --config",
+    "build:data": "node scripts/build-parquet.js",
+    "watch": "node --watch scratch.js",
+    "test": "node --test --test-reporter=tap \"tests/**/*.test.js\" | tap-dancer",
+    "test:tap": "node --test --test-reporter=tap \"tests/**/*.test.js\"",
     "lint": "eslint ."
   },
   "dependencies": {
+    "hyparquet": "1.31.1",
+    "hyparquet-compressors": "1.1.2"
+  },
+  "devDependencies": {
     "@duckdb/node-api": "1.5.5-r.5",
-    "eslint": "10.11.0"
+    "@rollup/plugin-node-resolve": "16.0.3",
+    "@rollup/plugin-terser": "1.0.0",
+    "eslint": "10.11.0",
+    "rollup": "4.63.5",
+    "rollup-plugin-filesize-check": "2.0.1",
+    "tap-dancer": "0.4.3"
   }
 }

@@ -1,53 +1,60 @@
-// thin duckdb wrapper around one parquet file
-import { DuckDBInstance } from '@duckdb/node-api'
-
-const esc = function (str) {
-  return String(str).replace(/'/g, "''")
-}
+// lazy parquet reader shared by words and senses
+import { asyncBufferFromUrl, parquetMetadataAsync, parquetQuery } from 'hyparquet'
+import { compressors } from 'hyparquet-compressors'
 
 class Db {
   constructor(path) {
     this.path = path
-    this.instance = null
-    this.conn = null
+    this.connection = null
+  }
+
+  async open() {
+    let file
+    if (/^https?:\/\//.test(this.path)) {
+      file = await asyncBufferFromUrl({ url: this.path })
+    } else {
+      const { asyncBufferFromFile } = await import('hyparquet/src/node.js')
+      file = await asyncBufferFromFile(this.path)
+    }
+    const metadata = await parquetMetadataAsync(file)
+    return { file, metadata }
   }
 
   async connect() {
-    if (this.conn === null) {
-      this.instance = await DuckDBInstance.create(':memory:')
-      this.conn = await this.instance.connect()
-      // remote parquet files work over http range-requests
-      if (/^https?:\/\//.test(this.path) === true) {
-        await this.conn.run('INSTALL httpfs')
-        await this.conn.run('LOAD httpfs')
-      }
-      await this.conn.run(`CREATE VIEW senses AS SELECT * FROM read_parquet('${esc(this.path)}')`)
+    if (this.connection === null) {
+      this.connection = this.open()
     }
-    return this.conn
+    const connection = this.connection
+    try {
+      return await connection
+    } catch (err) {
+      if (this.connection === connection) {
+        this.connection = null
+      }
+      throw err
+    }
   }
 
-  // all senses of a word, as plain json objects
   async getSenses(word) {
-    const conn = await this.connect()
-    const sql = 'SELECT to_json(t) AS j FROM senses t WHERE word_low = ? ORDER BY pos, sense_num'
-    const reader = await conn.runAndReadAll(sql, [String(word).toLowerCase()])
-    return reader.getRowObjects().map(row => JSON.parse(row.j))
+    const rows = await this.query({ filter: { word_low: { $eq: String(word).toLowerCase() } } })
+    return rows.sort((a, b) => {
+      if (a.pos < b.pos) {
+        return -1
+      }
+      if (a.pos > b.pos) {
+        return 1
+      }
+      return a.sense_num - b.sense_num
+    })
   }
 
-  // escape hatch for ad-hoc sql against the 'senses' view
-  async sql(query) {
-    const conn = await this.connect()
-    const reader = await conn.runAndReadAll(query)
-    return reader.getRowObjectsJson()
+  async query({ filter, columns, rowStart, rowEnd, orderBy } = {}) {
+    const { file, metadata } = await this.connect()
+    return parquetQuery({ file, metadata, compressors, filter, columns, rowStart, rowEnd, orderBy })
   }
 
   async close() {
-    if (this.conn !== null) {
-      this.conn.closeSync()
-      this.instance.closeSync()
-      this.conn = null
-      this.instance = null
-    }
+    this.connection = null
   }
 }
 export default Db
