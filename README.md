@@ -1,34 +1,60 @@
-# floornet
+<div align="center">
+  <div><b>floornet</b></div>
+  <img src="https://user-images.githubusercontent.com/399657/68222691-6597f180-ffb9-11e9-8a32-a7f38aa8bded.png"/>
+  <div>wordnet as a parquet file</div>
+  <div><code>npm install floornet</code></div>
+  <div align="center">
+    <sub>
+      by
+      <a href="https://github.com/spencermountain">Spencer Kelly</a>
+    </sub>
+  </div>
+  <img height="25px" src="https://user-images.githubusercontent.com/399657/68221824-09809d80-ffb8-11e9-9ef0-6ed3574b0ce8.png"/>
+</div>
 
-WordNet as a single Parquet file, with a small [hyparquet](https://github.com/hyparam/hyparquet) wrapper for querying it.
+<div align="center">
+  <div>
+    <a href="https://npmjs.org/package/floornet">
+    <img src="https://img.shields.io/npm/v/floornet.svg?style=flat-square" />
+  </a>
+  <a href="https://bundlephobia.com/result?p=floornet">
+    <img src="https://badgen.net/bundlejs/min/floornet" />
+  </a>
+  </div>
+</div>
+
+<!-- spacer -->
+<img height="20px" src="https://user-images.githubusercontent.com/399657/68221862-17ceb980-ffb8-11e9-87d4-7b30b6488f16.png"/>
+
+WordNet compressed as a single Parquet file, with a small [hyparquet](https://github.com/hyparam/hyparquet) wrapper for querying it.
 
 - the whole English dictionary in one **19mb file** — no server, no install-step data
 - pure JavaScript runtime, with no native database dependency
 - works on **remote files** too, via HTTP range-requests
 
-The data is [Open English WordNet 2025](https://github.com/globalwordnet/english-wordnet) — 185k senses, flattened to one row each, sorted by word, and compressed with zstd.
+The data is [Open English WordNet](https://github.com/globalwordnet/english-wordnet) — 185k senses, flattened to one row each, sorted by word, and compressed with gzip.
 
 ## setup
 
-Requires Node.js 20 or newer. DuckDB is a development dependency used only to build the dataset. The runtime uses hyparquet and hyparquet-compressors to read existing zstd files.
+Requires Node.js 20 or newer. The dataset is built with hyparquet-writer and Node’s built-in gzip compression. The runtime uses hyparquet and hyparquet-compressors.
 
 ```bash
 pnpm install
-pnpm build        # Rollup → builds/floornet.{mjs,cjs,js,min.js}
+pnpm build        # separate Node and browser bundles
 pnpm build:data   # downloads english-wordnet (11mb) → data/wordnet.parquet
 ```
 
-The ESM (`.mjs`) and CommonJS (`.cjs`) bundles export `default`, `Word`, and `Sense`. The browser bundles expose these on `window.floornet`; use `window.floornet.default(url)` with an HTTP(S) URL. Hyparquet and the decompressors are bundled. Local paths load hyparquet's Node filesystem reader on demand and require the installed `hyparquet` dependency.
+The npm package includes `data/wordnet.parquet`. `pnpm pack` rebuilds the dataset and bundles before packaging; no data download or build is needed when installing the package.
+
+Node uses `builds/floornet.mjs` (ESM) or `builds/floornet.cjs` (CommonJS). Browser bundlers select `builds/floornet.browser.mjs`; `floornet/browser` also selects it explicitly. The browser builds contain no Node filesystem reader or bundled dataset. Hyparquet and the decompressors are bundled in both builds.
 
 ## usage
 
 ```js
 import floornet from 'floornet'
 
-// either local:
-const wn = floornet('./data/wordnet.parquet')
-// or remote:
-const wn = floornet('https://mywebsite.com/wordnet.parquet')
+// Node: use the packaged dictionary, independent of the working directory
+const wn = floornet()
 
 let word = await wn.getWord('strike')
 word.title //'strike'
@@ -41,6 +67,21 @@ word.senses('verb').forEach(s => {
   s.antonyms().map(w => w.title) //[]
 })
 ```
+
+Node also accepts a custom local path or HTTP(S) URL: `floornet('./data/wordnet.parquet')` or `floornet('https://mywebsite.com/wordnet.parquet')`. With CommonJS, use `const { default: floornet } = require('floornet')`.
+
+### browser
+
+Browsers require an explicit HTTP(S) URL. Host `data/wordnet.parquet` on a server that supports HTTP range requests and permits cross-origin requests when needed.
+
+```js
+import floornet from 'floornet/browser'
+
+const wn = floornet('https://mywebsite.com/wordnet.parquet')
+const word = await wn.getWord('strike')
+```
+
+For a script tag, use `builds/floornet.js` or `builds/floornet.min.js`, then call `window.floornet.default(url)`. Calling the browser build without a URL throws an error.
 
 hop around the graph — word → sense → word → sense...
 
@@ -85,7 +126,7 @@ const wn = floornet('https://somewhere.com/wordnet.parquet')
 
 ## api
 
-`floornet(path)` returns a db object:
+`floornet(path?)` returns a db object on Node; browsers require `floornet(url)`:
 
 | method | returns |
 | --- | --- |
@@ -126,6 +167,4 @@ One row per sense, sorted by `word_low`, in 10k-row groups — so lookups can sk
 
 Both directions of every relation are materialized, so `hyponyms()` never depends on which side the source data recorded.
 
-## license
-
-Code is MIT. The data is [Open English WordNet](https://en-word.net/), released under CC BY 4.0, itself derived from Princeton WordNet.
+MIT - PRs welcome

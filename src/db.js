@@ -1,21 +1,16 @@
 // lazy parquet reader shared by words and senses
-import { asyncBufferFromUrl, parquetMetadataAsync, parquetQuery } from 'hyparquet'
+import { parquetMetadataAsync, parquetQuery } from 'hyparquet'
 import { compressors } from 'hyparquet-compressors'
 
 class Db {
-  constructor(path) {
+  constructor(path, openFile) {
     this.path = path
+    this.openFile = openFile
     this.connection = null
   }
 
   async open() {
-    let file
-    if (/^https?:\/\//.test(this.path)) {
-      file = await asyncBufferFromUrl({ url: this.path })
-    } else {
-      const { asyncBufferFromFile } = await import('hyparquet/src/node.js')
-      file = await asyncBufferFromFile(this.path)
-    }
+    const file = await this.openFile(this.path)
     const metadata = await parquetMetadataAsync(file)
     return { file, metadata }
   }

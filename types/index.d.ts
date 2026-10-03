@@ -102,8 +102,8 @@ declare class Floornet {
   close(): Promise<void>
 }
 
-/** open a local path, or a http(s) url to a parquet file */
-declare function floornet(path: string): Floornet
+/** open the bundled data by default, a local path, or an HTTP(S) URL */
+declare function floornet(path?: string): Floornet
 
 export default floornet
 export { Floornet }

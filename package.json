@@ -6,7 +6,7 @@
   "repository": "github:spencermountain/floornet",
   "author": "Spencer Kelly <spencermountain@gmail.com> (https://spencermountain.dev)",
   "type": "module",
-  "main": "./src/index.js",
+  "main": "./builds/floornet.cjs",
   "types": "./types/index.d.ts",
   "sideEffects": false,
   "engines": {
@@ -18,19 +18,48 @@
     "watch": "node --watch scratch.js",
     "test": "node --test --test-reporter=tap \"tests/**/*.test.js\" | tap-dancer",
     "test:tap": "node --test --test-reporter=tap \"tests/**/*.test.js\"",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "prepack": "pnpm build:data && pnpm build"
   },
   "dependencies": {
     "hyparquet": "1.31.1",
     "hyparquet-compressors": "1.1.2"
   },
   "devDependencies": {
-    "@duckdb/node-api": "1.5.5-r.5",
     "@rollup/plugin-node-resolve": "16.0.3",
     "@rollup/plugin-terser": "1.0.0",
     "eslint": "10.11.0",
     "rollup": "4.63.5",
     "rollup-plugin-filesize-check": "2.0.1",
-    "tap-dancer": "0.4.3"
-  }
+    "tap-dancer": "0.4.3",
+    "hyparquet-writer": "0.16.10"
+  },
+  "module": "./builds/floornet.browser.mjs",
+  "browser": "./builds/floornet.browser.mjs",
+  "exports": {
+    ".": {
+      "browser": {
+        "types": "./types/browser.d.ts",
+        "default": "./builds/floornet.browser.mjs"
+      },
+      "node": {
+        "types": "./types/index.d.ts",
+        "import": "./builds/floornet.mjs",
+        "require": "./builds/floornet.cjs"
+      },
+      "types": "./types/browser.d.ts",
+      "default": "./builds/floornet.browser.mjs"
+    },
+    "./browser": {
+      "types": "./types/browser.d.ts",
+      "default": "./builds/floornet.browser.mjs"
+    },
+    "./builds/*": "./builds/*",
+    "./data/wordnet.parquet": "./data/wordnet.parquet"
+  },
+  "files": [
+    "builds/",
+    "types/",
+    "data/wordnet.parquet"
+  ]
 }

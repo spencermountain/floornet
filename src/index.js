@@ -1,49 +1,16 @@
-// floornet - wordnet-in-a-parquet-file
-//   const wn = floornet('./data/wordnet.parquet')
-//   const word = await wn.getWord('strike')
-import Db from './db.js'
-import Word from './word.js'
-import Sense from './sense.js'
+import { fileURLToPath } from 'node:url'
+import { asyncBufferFromUrl } from 'hyparquet'
+import Floornet, { Word, Sense } from './floornet.js'
 
-class Floornet {
-  constructor(path) {
-    this.db = new Db(path)
+const defaultPath = fileURLToPath(new URL('../data/wordnet.parquet', import.meta.url))
+const openFile = async path => {
+  if (/^https?:\/\//i.test(path)) {
+    return asyncBufferFromUrl({ url: path })
   }
-
-  // always returns a Word - check `.found`
-  async getWord(str) {
-    const word = new Word(str, null, this.db)
-    return word.fetch()
-  }
-
-  // one-shot dictionary helpers
-  async define(str) {
-    const word = await this.getWord(str)
-    return word.senses().map(s => ({ pos: s.pos, definition: s.definition }))
-  }
-
-  async synonyms(str) {
-    const word = await this.getWord(str)
-    return word.synonyms().map(w => w.title)
-  }
-
-  async antonyms(str) {
-    const word = await this.getWord(str)
-    return word.antonyms().map(w => w.title)
-  }
-
-  // read rows with hyparquet filters and column selection
-  async query(options) {
-    return this.db.query(options)
-  }
-
-  async close() {
-    return this.db.close()
-  }
+  const { asyncBufferFromFile } = await import('hyparquet/src/node.js')
+  return asyncBufferFromFile(path)
 }
+const floornet = (path = defaultPath) => new Floornet(path, openFile)
 
-const floornet = function (path) {
-  return new Floornet(path)
-}
 export default floornet
 export { Word, Sense }

@@ -7,8 +7,8 @@ const pkg = JSON.parse(fs.readFileSync('./package.json').toString())
 
 const name = 'floornet'
 const banner = `/* spencermountain/${name} ${pkg.version} ${pkg.license} */`
-// Keep Node's filesystem reader out of browser bundles.
-const external = ['hyparquet/src/node.js']
+// Node-only imports stay external in the Node builds.
+const external = ['node:url', 'hyparquet/src/node.js']
 const resolve = () => nodeResolve({ browser: true })
 
 export default [
@@ -22,7 +22,7 @@ export default [
         banner: banner
       }
     ],
-    plugins: [resolve()]
+    plugins: [nodeResolve()]
   },
   {
     input: 'src/index.js',
@@ -36,11 +36,15 @@ export default [
         banner: banner
       }
     ],
+    plugins: [nodeResolve()]
+  },
+  {
+    input: 'src/browser.js',
+    output: { file: `builds/${name}.browser.mjs`, format: 'esm', banner },
     plugins: [resolve()]
   },
   {
-    input: 'src/index.js',
-    external,
+    input: 'src/browser.js',
     output: [
       {
         file: `builds/${name}.js`,
@@ -54,8 +58,7 @@ export default [
     plugins: [resolve()]
   },
   {
-    input: 'src/index.js',
-    external,
+    input: 'src/browser.js',
     output: [
       {
         file: `builds/${name}.min.js`,
