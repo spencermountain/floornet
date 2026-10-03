@@ -29,10 +29,10 @@
     "@rollup/plugin-node-resolve": "16.0.3",
     "@rollup/plugin-terser": "1.0.0",
     "eslint": "10.11.0",
-    "rollup": "4.63.5",
+    "hyparquet-writer": "0.16.10",
+    "rollup": "4.64.0",
     "rollup-plugin-filesize-check": "2.0.1",
-    "tap-dancer": "0.4.3",
-    "hyparquet-writer": "0.16.10"
+    "tap-dancer": "0.4.4"
   },
   "module": "./builds/floornet.browser.mjs",
   "browser": "./builds/floornet.browser.mjs",
