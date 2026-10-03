@@ -1,6 +1,5 @@
 <div align="center">
   <div><b>floornet</b></div>
-  <img src="https://user-images.githubusercontent.com/399657/68222691-6597f180-ffb9-11e9-8a32-a7f38aa8bded.png"/>
   <div>wordnet as a parquet file</div>
   <div><code>npm install floornet</code></div>
   <div align="center">
@@ -11,7 +10,7 @@
   </div>
   <img height="25px" src="https://user-images.githubusercontent.com/399657/68221824-09809d80-ffb8-11e9-9ef0-6ed3574b0ce8.png"/>
 </div>
-
+<!--2nd row-->
 <div align="center">
   <div>
     <a href="https://npmjs.org/package/floornet">
@@ -34,45 +33,36 @@ WordNet compressed as a single Parquet file, with a small [hyparquet](https://gi
 
 The data is [Open English WordNet](https://github.com/globalwordnet/english-wordnet) — 185k senses, flattened to one row each, sorted by word, and compressed with gzip.
 
-## setup
-
-Requires Node.js 20 or newer. The dataset is built with hyparquet-writer and Node’s built-in gzip compression. The runtime uses hyparquet and hyparquet-compressors.
-
-```bash
-pnpm install
-pnpm build        # separate Node and browser bundles
-pnpm build:data   # downloads english-wordnet (11mb) → data/wordnet.parquet
-```
-
-The npm package includes `data/wordnet.parquet`. `pnpm pack` rebuilds the dataset and bundles before packaging; no data download or build is needed when installing the package.
-
-Node uses `builds/floornet.mjs` (ESM) or `builds/floornet.cjs` (CommonJS). Browser bundlers select `builds/floornet.browser.mjs`; `floornet/browser` also selects it explicitly. The browser builds contain no Node filesystem reader or bundled dataset. Hyparquet and the decompressors are bundled in both builds.
-
 ## usage
 
 ```js
 import floornet from 'floornet'
 
-// Node: use the packaged dictionary, independent of the working directory
 const wn = floornet()
 
 let word = await wn.getWord('strike')
-word.title //'strike'
 word.pos() //['noun', 'verb']
 
 word.senses('verb').forEach(s => {
   s.id //'strike.verb.2'
   s.description //'have an emotional or cognitive impact upon'
   s.synonyms().map(w => w.title) //['affect', 'impress', 'move']
-  s.antonyms().map(w => w.title) //[]
 })
 ```
 
-Node also accepts a custom local path or HTTP(S) URL: `floornet('./data/wordnet.parquet')` or `floornet('https://mywebsite.com/wordnet.parquet')`. With CommonJS, use `const { default: floornet } = require('floornet')`.
+```js
+// Use a custom build local build:
+const wn = floornet('./data/wordnet.parquet')
+// or a remote parquet file:
+const wn = floornet('https://mywebsite.com/wordnet.parquet')
+// In CommonJS
+const { default: floornet } = require('floornet')`.
+```
 
-### browser
+### browser usage
+The database does not come bundled in the browser build. Browsers require a URL to a remote parquet file.
 
-Browsers require an explicit HTTP(S) URL. Host `data/wordnet.parquet` on a server that supports HTTP range requests and permits cross-origin requests when needed.
+Put `data/wordnet.parquet` on a s3 or r2, or any server that supports HTTP range requests:
 
 ```js
 import floornet from 'floornet/browser'
@@ -81,8 +71,15 @@ const wn = floornet('https://mywebsite.com/wordnet.parquet')
 const word = await wn.getWord('strike')
 ```
 
-For a script tag, use `builds/floornet.js` or `builds/floornet.min.js`, then call `window.floornet.default(url)`. Calling the browser build without a URL throws an error.
+Calling the browser build without a URL throws an error.
 
+
+
+<!-- spacer -->
+<img height="20px" src="https://user-images.githubusercontent.com/399657/68221862-17ceb980-ffb8-11e9-87d4-7b30b6488f16.png"/>
+
+
+## Example
 hop around the graph — word → sense → word → sense...
 
 ```js
@@ -124,6 +121,9 @@ remote files just work — hyparquet uses HTTP range requests and skips row grou
 const wn = floornet('https://somewhere.com/wordnet.parquet')
 ```
 
+<!-- spacer -->
+<img height="20px" src="https://user-images.githubusercontent.com/399657/68221862-17ceb980-ffb8-11e9-87d4-7b30b6488f16.png"/>
+
 ## api
 
 `floornet(path?)` returns a db object on Node; browsers require `floornet(url)`:
@@ -142,7 +142,7 @@ const wn = floornet('https://somewhere.com/wordnet.parquet')
 
 Word and sense traversal is synchronous because each row already embeds the words it points to. Lookups, lazy `fetch()`, and `query()` read Parquet asynchronously. Metadata is shared across lookups; `close()` clears it, and a subsequent lookup reopens the file.
 
-## the file
+## parquet schema
 
 One row per sense, sorted by `word_low`, in 10k-row groups — so lookups can skip unrelated row groups, locally or over HTTP. Words that span group boundaries include senses from every matching group.
 
@@ -167,4 +167,8 @@ One row per sense, sorted by `word_low`, in 10k-row groups — so lookups can sk
 
 Both directions of every relation are materialized, so `hyponyms()` never depends on which side the source data recorded.
 
-MIT - PRs welcome
+## license
+
+Code is [MIT](LICENSE) — PRs welcome.
+
+The bundled [Open English WordNet 2025](https://github.com/globalwordnet/english-wordnet) is licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/)

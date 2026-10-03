@@ -106,4 +106,4 @@ declare class Floornet {
 declare function floornet(path?: string): Floornet
 
 export default floornet
-export { Floornet }
+export type { Floornet }
